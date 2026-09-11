@@ -282,6 +282,16 @@
       } else if (el.shapeType === 'arrow') {
         drawArrow(ctx, el.x, el.y, el.x + el.w, el.y + el.h, el.size || 3);
       }
+    } else if (el.type === 'text') {
+      if (el.text) {
+        ctx.fillStyle = el.color || '#FFFFFF';
+        const size = el.fontSize || 20;
+        ctx.font = `600 ${size}px 'Plus Jakarta Sans', sans-serif`;
+        const lines = el.text.split('\n');
+        lines.forEach((line, i) => {
+          ctx.fillText(line, el.x, el.y + (i + 1) * size * 1.25);
+        });
+      }
     }
 
     ctx.restore();
@@ -329,8 +339,9 @@
     dctx.clearRect(0, 0, cssW, cssH);
   }
 
-  // ---------- DOM Overlays (Sticky Notes & Text) ----------
+  // ---------- DOM Overlays (Sticky Notes & Freeform Text) ----------
   const stickyDoms = new Map(); // id -> HTMLElement
+  const textDoms = new Map();   // id -> HTMLElement
 
   function updateDomOverlays() {
     elements.forEach(el => {
@@ -351,6 +362,27 @@
         if (textarea && textarea !== document.activeElement && textarea.value !== el.text) {
           textarea.value = el.text || '';
         }
+      } else if (el.type === 'text') {
+        let node = textDoms.get(el.id);
+        if (!node) {
+          node = createTextDom(el);
+          domLayer.appendChild(node);
+          textDoms.set(el.id, node);
+        }
+        const screenPos = worldToScreen(el.x, el.y);
+        node.style.left = `${screenPos.x}px`;
+        node.style.top = `${screenPos.y}px`;
+        node.style.transform = `scale(${zoom})`;
+        node.style.transformOrigin = 'top left';
+
+        const input = node.querySelector('.board-text-input');
+        if (input && input !== document.activeElement && input.innerText !== el.text) {
+          input.innerText = el.text || '';
+        }
+        if (input) {
+          input.style.color = el.color || currentColor;
+          input.style.fontSize = `${el.fontSize || 20}px`;
+        }
       }
     });
 
@@ -361,6 +393,87 @@
         stickyDoms.delete(id);
       }
     }
+
+    // Remove deleted text elements from DOM
+    for (const [id, node] of textDoms.entries()) {
+      if (!elements.some(e => e.id === id)) {
+        node.remove();
+        textDoms.delete(id);
+      }
+    }
+  }
+
+  function createTextDom(el) {
+    const box = document.createElement('div');
+    box.className = 'board-text-box';
+    box.dataset.id = el.id;
+
+    box.innerHTML = `
+      <div class="board-text-drag-handle" title="Drag to move text">⠿</div>
+      <div class="board-text-input" contenteditable="true" spellcheck="false" data-placeholder="Type text...">${el.text || ''}</div>
+      <button class="board-text-btn-delete" title="Delete text">&times;</button>
+    `;
+
+    const input = box.querySelector('.board-text-input');
+    input.style.color = el.color || currentColor;
+    input.style.fontSize = `${el.fontSize || 20}px`;
+
+    input.addEventListener('focus', () => box.classList.add('is-focused'));
+    input.addEventListener('blur', () => box.classList.remove('is-focused'));
+
+    let textSyncTimeout = null;
+    input.addEventListener('input', () => {
+      el.text = input.innerText;
+      clearTimeout(textSyncTimeout);
+      textSyncTimeout = setTimeout(() => {
+        socket.emit('element:update', { id: el.id, text: el.text });
+      }, 200);
+    });
+
+    const handle = box.querySelector('.board-text-drag-handle');
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
+    let originalElX = 0, originalElY = 0;
+
+    handle.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      isDragging = true;
+      box.classList.add('is-dragging');
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      originalElX = el.x;
+      originalElY = el.y;
+      handle.setPointerCapture(e.pointerId);
+    });
+
+    handle.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      const dx = (e.clientX - dragStartX) / zoom;
+      const dy = (e.clientY - dragStartY) / zoom;
+      el.x = originalElX + dx;
+      el.y = originalElY + dy;
+      updateDomOverlays();
+    });
+
+    const finishTextDrag = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      box.classList.remove('is-dragging');
+      socket.emit('element:update', { id: el.id, x: el.x, y: el.y });
+    };
+
+    handle.addEventListener('pointerup', finishTextDrag);
+    handle.addEventListener('pointercancel', finishTextDrag);
+
+    box.querySelector('.board-text-btn-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      elements = elements.filter(item => item.id !== el.id);
+      updateDomOverlays();
+      socket.emit('element:delete', el.id);
+      playSound('pop');
+    });
+
+    return box;
   }
 
   const STICKY_THEMES = ['yellow', 'coral', 'mint', 'sky', 'lavender'];
@@ -1018,21 +1131,29 @@
   }
 
   function createTextAt(worldP) {
-    const initialText = prompt('Enter text label:');
-    if (!initialText) return;
+    const fontSize = currentSize <= 3 ? 20 : (currentSize <= 6 ? 28 : 40);
     const textEl = {
       id: 'text_' + Math.random().toString(36).slice(2, 9),
-      type: 'shape',
-      shapeType: 'line', // simple representation or note
+      type: 'text',
       x: worldP.x,
       y: worldP.y,
-      w: 100,
-      h: 20,
+      text: '',
       color: currentColor,
-      size: 2
+      fontSize: fontSize
     };
-    // We can also create a sticky or text
-    createStickyAt(worldP);
+    elements.push(textEl);
+    socket.emit('element:add', textEl);
+    redrawAll();
+    playSound('pop');
+
+    // Auto-focus the new text box
+    setTimeout(() => {
+      const node = textDoms.get(textEl.id);
+      if (node) {
+        const input = node.querySelector('.board-text-input');
+        if (input) input.focus();
+      }
+    }, 50);
   }
 
   function eraseAt(worldP) {
@@ -1043,6 +1164,8 @@
         return !el.points.some(p => Math.hypot(p.x - worldP.x, p.y - worldP.y) < eraseRadius);
       } else if (el.type === 'shape') {
         return Math.hypot(el.x + el.w / 2 - worldP.x, el.y + el.h / 2 - worldP.y) > eraseRadius + Math.max(Math.abs(el.w), Math.abs(el.h)) / 2;
+      } else if (el.type === 'text') {
+        return Math.hypot(el.x - worldP.x, el.y - worldP.y) > eraseRadius * 1.5;
       }
       return true;
     });
