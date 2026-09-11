@@ -1616,8 +1616,6 @@
       setTool('line');
     } else if (e.key === 's' || e.key === 'S') {
       setTool('sticky');
-    } else if (e.key === 'x' || e.key === 'X') {
-      setTool('laser');
     } else if (e.key === '/') {
       e.preventDefault();
       openCursorChat(window.innerWidth / 2, window.innerHeight / 2);
