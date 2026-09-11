@@ -127,11 +127,12 @@ body[data-tool="laser"] #board { cursor: crosshair; }
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #6366F1, #EC4899);
+  background: linear-gradient(135deg, #FF6B4A, #F43F5E);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  box-shadow: 0 2px 10px rgba(244, 63, 94, 0.35);
 }
 
 .brand__icon svg { width: 18px; height: 18px; }
@@ -877,4 +878,59 @@ kbd {
 }
 
 .hidden { display: none !important; }
+
+/* Form Input & Profile Picker */
+.form-input {
+  width: 100%;
+  background: var(--surface-active);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  color: var(--text-main);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.profile-color-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.profile-color-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+  padding: 0;
+}
+
+.profile-color-dot:hover {
+  transform: scale(1.15);
+}
+
+.profile-color-dot.is-active {
+  border-color: white;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.modal-card--entry {
+  max-width: 380px;
+  animation: popInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popInModal {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
 

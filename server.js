@@ -59,20 +59,32 @@ function userList(roomId) {
 io.on('connection', (socket) => {
   let currentRoom = null;
 
-  socket.on('room:join', (roomId) => {
-    roomId = (roomId || 'default').toString().slice(0, 64);
+  socket.on('room:join', (payload) => {
+    let roomId = 'default';
+    let requestedName = null;
+    let requestedColor = null;
+
+    if (typeof payload === 'object' && payload !== null) {
+      roomId = (payload.roomId || 'default').toString().slice(0, 64);
+      if (payload.name && typeof payload.name === 'string') requestedName = payload.name.trim().slice(0, 32);
+      if (payload.color && typeof payload.color === 'string') requestedColor = payload.color.trim().slice(0, 16);
+    } else if (typeof payload === 'string') {
+      roomId = payload.toString().slice(0, 64);
+    }
+
     currentRoom = roomId;
     socket.join(roomId);
 
     const room = getRoom(roomId);
     const idx = Object.keys(room.users).length;
-    const userName = randomName();
-    const userColor = colorForIndex(idx);
+    const userName = requestedName || randomName();
+    const userColor = requestedColor || colorForIndex(idx);
+    const initials = userName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
     room.users[socket.id] = {
       name: userName,
       color: userColor,
-      initials: userName.split(' ').map(w => w[0]).join('')
+      initials: initials
     };
 
     // Send initial state to the newly connected user
@@ -84,6 +96,27 @@ io.on('connection', (socket) => {
 
     // Notify room of updated users list
     io.to(roomId).emit('user:list', userList(roomId));
+  });
+
+  // ---- Update User Profile (Name & Color) Live ----
+  socket.on('user:update', (profile) => {
+    if (!currentRoom || !profile) return;
+    const room = getRoom(currentRoom);
+    if (!room.users[socket.id]) return;
+
+    if (profile.name && typeof profile.name === 'string') {
+      const trimmed = profile.name.trim().slice(0, 32);
+      if (trimmed) {
+        room.users[socket.id].name = trimmed;
+        room.users[socket.id].initials = trimmed.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'U';
+      }
+    }
+    if (profile.color && typeof profile.color === 'string') {
+      room.users[socket.id].color = profile.color.trim().slice(0, 16);
+    }
+
+    // Broadcast updated user list to everyone
+    io.to(currentRoom).emit('user:list', userList(currentRoom));
   });
 
   // ---- Element creation (strokes, shapes, sticky notes, text) ----

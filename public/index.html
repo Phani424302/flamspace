@@ -23,10 +23,12 @@
     <div class="top-nav__left">
       <div class="brand">
         <div class="brand__icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M12 23c4.97 0 9-4.03 9-9 0-4.08-2.61-6.85-4.88-8.98-1.57-1.47-3.08-2.73-3.62-4.02a.5.5 0 0 0-.94.04C10.5 4.5 9 7 9 9.5c0 1.25.5 2.2 1.15 3.03.62.8 1.35 1.5 1.35 2.47 0 1.38-1.12 2.5-2.5 2.5s-2.5-1.12-2.5-2.5c0-1.84 1.16-3.41 1.72-4.14a.5.5 0 0 0-.74-.63C5.58 12.08 3 14.58 3 17c0 3.31 4.03 6 9 6z"/>
+          </svg>
         </div>
         <div class="brand__info">
-          <span class="brand__title">FlamSpace <span class="brand__pro">R&D</span></span>
+          <span class="brand__title">FlamSpace</span>
           <span class="brand__status" id="connStatus" data-state="connecting">
             <span class="brand__dot"></span>
             <span class="brand__statusText">connecting</span>
@@ -243,6 +245,68 @@
       <div class="modal-footer" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-muted);">
         <span>Built by <strong style="color:var(--text-main);">Phani Bhushan Reddy</strong></span>
         <span style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);padding:2px 8px;border-radius:12px;color:var(--accent);font-weight:600;">FLAM AI Frontend R&D</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Welcome Entry Modal: Choose Display Name & Cursor Color -->
+  <div id="welcomeModal" class="modal-overlay hidden">
+    <div class="modal-card modal-card--entry">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="brand__icon" style="width:32px;height:32px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <path d="M12 23c4.97 0 9-4.03 9-9 0-4.08-2.61-6.85-4.88-8.98-1.57-1.47-3.08-2.73-3.62-4.02a.5.5 0 0 0-.94.04C10.5 4.5 9 7 9 9.5c0 1.25.5 2.2 1.15 3.03.62.8 1.35 1.5 1.35 2.47 0 1.38-1.12 2.5-2.5 2.5s-2.5-1.12-2.5-2.5c0-1.84 1.16-3.41 1.72-4.14a.5.5 0 0 0-.74-.63C5.58 12.08 3 14.58 3 17c0 3.31 4.03 6 9 6z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title" style="font-size:16px;">Welcome to FlamSpace</h3>
+            <p style="font-size:11px;color:var(--text-muted);">Set your collaborator name to join the board</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="entry-form" style="margin-top:16px;display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.04em;">Your Display Name</label>
+          <input type="text" id="welcomeNameInput" class="form-input" placeholder="e.g. Phani Bhushan" maxlength="28" spellcheck="false" autocomplete="off" />
+        </div>
+
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;letter-spacing:0.04em;">Pick Your Cursor & Avatar Color</label>
+          <div class="profile-color-grid" id="welcomeColorGrid"></div>
+        </div>
+
+        <button id="welcomeJoinBtn" class="top-btn top-btn--primary" style="justify-content:center;padding:10px;font-size:13px;border-radius:8px;margin-top:4px;">
+          <span>Join Whiteboard &rarr;</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Profile Modal: Update Name & Color anytime -->
+  <div id="profileModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Customize Your Profile</h3>
+        <button id="closeProfileBtn" class="modal-close">&times;</button>
+      </div>
+
+      <div class="entry-form" style="margin-top:14px;display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.04em;">Display Name</label>
+          <input type="text" id="profileNameInput" class="form-input" placeholder="Your name" maxlength="28" spellcheck="false" autocomplete="off" />
+        </div>
+
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;letter-spacing:0.04em;">Cursor & Avatar Color</label>
+          <div class="profile-color-grid" id="profileColorGrid"></div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
+          <button id="cancelProfileBtn" class="top-btn">Cancel</button>
+          <button id="saveProfileBtn" class="top-btn top-btn--primary">Save Profile</button>
+        </div>
       </div>
     </div>
   </div>

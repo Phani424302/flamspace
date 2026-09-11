@@ -438,6 +438,101 @@
     return card;
   }
 
+  // ---------- User Profile Management ----------
+  const welcomeModal = document.getElementById('welcomeModal');
+  const welcomeNameInput = document.getElementById('welcomeNameInput');
+  const welcomeColorGrid = document.getElementById('welcomeColorGrid');
+  const welcomeJoinBtn = document.getElementById('welcomeJoinBtn');
+
+  const profileModal = document.getElementById('profileModal');
+  const profileNameInput = document.getElementById('profileNameInput');
+  const profileColorGrid = document.getElementById('profileColorGrid');
+  const closeProfileBtn = document.getElementById('closeProfileBtn');
+  const cancelProfileBtn = document.getElementById('cancelProfileBtn');
+  const saveProfileBtn = document.getElementById('saveProfileBtn');
+
+  let myProfile = null;
+  try {
+    myProfile = JSON.parse(localStorage.getItem('flamspace_profile'));
+  } catch (e) {}
+
+  let selectedColor = (myProfile && myProfile.color) || PALETTE[Math.floor(Math.random() * PALETTE.length)];
+
+  function renderColorOptions(container, activeColor, onSelect) {
+    container.innerHTML = '';
+    PALETTE.forEach(c => {
+      const dot = document.createElement('button');
+      dot.className = `profile-color-dot ${c === activeColor ? 'is-active' : ''}`;
+      dot.style.backgroundColor = c;
+      dot.addEventListener('click', (e) => {
+        e.preventDefault();
+        container.querySelectorAll('.profile-color-dot').forEach(d => d.classList.remove('is-active'));
+        dot.classList.add('is-active');
+        onSelect(c);
+      });
+      container.appendChild(dot);
+    });
+  }
+
+  // Profile Modal logic (open when clicking own avatar in top bar)
+  function openProfileModal() {
+    profileModal.classList.remove('hidden');
+    profileNameInput.value = (me && me.name) || (myProfile && myProfile.name) || '';
+    let editColor = (me && me.color) || selectedColor;
+    renderColorOptions(profileColorGrid, editColor, (c) => { editColor = c; });
+    setTimeout(() => profileNameInput.focus(), 50);
+
+    const saveProfile = () => {
+      const newName = profileNameInput.value.trim() || (me ? me.name : 'Collaborator');
+      myProfile = { name: newName, color: editColor };
+      localStorage.setItem('flamspace_profile', JSON.stringify(myProfile));
+      if (me) {
+        me.name = newName;
+        me.color = editColor;
+        me.initials = newName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'U';
+        users[me.id] = { ...users[me.id], name: newName, color: editColor, initials: me.initials };
+      }
+      socket.emit('user:update', { name: newName, color: editColor });
+      profileModal.classList.add('hidden');
+      renderPresence();
+      showToast('Profile updated!');
+    };
+
+    saveProfileBtn.onclick = saveProfile;
+    profileNameInput.onkeydown = (e) => {
+      if (e.key === 'Enter') saveProfile();
+    };
+  }
+
+  closeProfileBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
+  cancelProfileBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
+  profileModal.addEventListener('click', (e) => {
+    if (e.target === profileModal) profileModal.classList.add('hidden');
+  });
+
+  // Check if first-time visitor: Show Welcome Join Modal
+  if (!myProfile || !myProfile.name) {
+    welcomeModal.classList.remove('hidden');
+    renderColorOptions(welcomeColorGrid, selectedColor, (c) => { selectedColor = c; });
+    setTimeout(() => welcomeNameInput.focus(), 100);
+
+    const handleJoin = () => {
+      const name = welcomeNameInput.value.trim() || 'Collaborator';
+      myProfile = { name, color: selectedColor };
+      localStorage.setItem('flamspace_profile', JSON.stringify(myProfile));
+      welcomeModal.classList.add('hidden');
+      if (socket.connected) {
+        socket.emit('room:join', { roomId, name: myProfile.name, color: myProfile.color });
+      }
+      showToast(`Welcome to FlamSpace, ${name}!`);
+    };
+
+    welcomeJoinBtn.addEventListener('click', handleJoin);
+    welcomeNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleJoin();
+    });
+  }
+
   // ---------- Socket.IO Multiplayer Architecture ----------
   const socket = io();
 
@@ -448,7 +543,11 @@
 
   socket.on('connect', () => {
     setStatus('online', 'live');
-    socket.emit('room:join', roomId);
+    if (myProfile && myProfile.name) {
+      socket.emit('room:join', { roomId, name: myProfile.name, color: myProfile.color });
+    } else {
+      socket.emit('room:join', { roomId, name: '', color: selectedColor });
+    }
   });
 
   socket.on('disconnect', () => {
@@ -554,7 +653,11 @@
       av.className = `presence-avatar ${isMe ? 'presence-avatar--me' : ''}`;
       av.style.backgroundColor = u.color;
       av.textContent = u.initials || u.name.slice(0, 2);
-      av.title = isMe ? `${u.name} (You)` : u.name;
+      av.title = isMe ? `${u.name} (You) — Click to edit profile` : u.name;
+      if (isMe) {
+        av.style.cursor = 'pointer';
+        av.addEventListener('click', openProfileModal);
+      }
       presenceStack.appendChild(av);
     });
 
