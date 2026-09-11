@@ -457,33 +457,39 @@ body[data-tool="laser"] #board { cursor: crosshair; }
   opacity: 0.7;
 }
 
-/* Color Picker Popover */
-.color-picker-wrapper { position: relative; }
-
-.dock__color-preview {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid var(--border-strong);
-  background: var(--surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  transition: transform 0.15s ease;
+/* ---------- Modern Popover Sections (Shapes, Colors, Reactions) ---------- */
+.popover-group {
+  position: relative;
 }
 
-.dock__color-preview:hover { transform: scale(1.08); }
+.dock__btn-chevron {
+  width: 9px;
+  height: 9px;
+  margin-left: 2px;
+  opacity: 0.55;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+.dock__btn:hover .dock__btn-chevron {
+  opacity: 0.9;
+}
+
+.dock__color-preview-btn {
+  gap: 2px;
+  padding: 0 4px;
+}
 
 .dock__color-dot {
   width: 18px;
   height: 18px;
   border-radius: 50%;
   background: #6366F1;
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,0.25);
+  flex-shrink: 0;
 }
 
-.color-popover {
+.popover-panel {
   position: absolute;
   bottom: calc(100% + 14px);
   left: 50%;
@@ -491,9 +497,85 @@ body[data-tool="laser"] #board { cursor: crosshair; }
   background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
-  padding: 8px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  padding: 10px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55);
   z-index: 100;
+  animation: popInUp 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popInUp {
+  from { opacity: 0; transform: translate(-50%, 6px) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+.popover-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.popover-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+/* Shapes Popover Panel */
+.popover-panel--shapes {
+  min-width: 146px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.popover-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.12s ease;
+}
+
+.popover-tool-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+}
+
+.popover-tool-btn kbd {
+  margin-left: auto;
+  font-size: 9px;
+  opacity: 0.8;
+}
+
+.popover-tool-btn:hover {
+  background: var(--surface-hover);
+  color: white;
+}
+
+.popover-tool-btn.is-active {
+  background: var(--accent);
+  color: white;
+}
+
+/* Color & Stroke Size Popover Panel */
+.popover-panel--colors {
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .color-grid {
@@ -503,8 +585,8 @@ body[data-tool="laser"] #board { cursor: crosshair; }
 }
 
 .color-swatch {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
   border: 2px solid transparent;
   cursor: pointer;
@@ -517,57 +599,109 @@ body[data-tool="laser"] #board { cursor: crosshair; }
   box-shadow: 0 0 0 2px var(--accent);
 }
 
-/* Size picker */
-.size-picker-wrapper {
+.size-picker-row {
   display: flex;
-  align-items: center;
-  gap: 3px;
-  background: rgba(0,0,0,0.25);
-  padding: 3px;
-  border-radius: var(--radius-md);
+  gap: 4px;
 }
 
-.size-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
+.size-picker-row .size-btn {
+  flex: 1;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-active);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.size-btn span {
+.size-picker-row .size-btn span:first-child {
   background: var(--text-muted);
   border-radius: 50%;
-  transition: background 0.15s ease;
 }
 
-.size-btn:hover span { background: var(--text-main); }
-.size-btn.is-active { background: var(--surface-active); }
-.size-btn.is-active span { background: white; }
+.size-picker-row .size-btn:hover {
+  color: var(--text-main);
+  background: var(--surface-hover);
+}
 
-/* Emoji Reactions Strip */
-.reactions-strip {
+.size-picker-row .size-btn.is-active {
+  background: var(--accent);
+  color: white;
+  border-color: rgba(255,255,255,0.2);
+}
+
+.size-picker-row .size-btn.is-active span:first-child {
+  background: white;
+}
+
+/* Reactions & Chat Popover Panel */
+.popover-panel--reactions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 170px;
+}
+
+.popover-reactions-grid {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 
-.reaction-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
+.popover-reactions-grid .reaction-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   border: none;
-  background: transparent;
-  font-size: 15px;
+  background: var(--surface-active);
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.popover-reactions-grid .reaction-btn:hover {
+  transform: scale(1.22);
+  background: var(--surface-hover);
+}
+
+.popover-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: var(--surface-active);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  width: 100%;
+  transition: all 0.15s ease;
+}
+
+.popover-chat-btn:hover {
+  border-color: var(--accent);
+  color: white;
+  background: var(--surface-hover);
+}
+
+.popover-chat-btn kbd {
+  margin-left: auto;
+  font-size: 9px;
 }
 
 .reaction-btn:hover {

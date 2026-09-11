@@ -53,10 +53,6 @@
       <div class="presence-stack" id="presenceStack" title="Active collaborators in this room"></div>
 
       <!-- Action Buttons -->
-      <button id="sfxToggleBtn" class="top-btn" title="Toggle audio sound effects">
-        <svg id="sfxIconOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-      </button>
-
       <button id="shortcutsBtn" class="top-btn" title="Keyboard Shortcuts (? )">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
       </button>
@@ -118,20 +114,37 @@
 
       <div class="dock__divider"></div>
 
-      <!-- Shapes Popover / Buttons -->
-      <div class="dock__group">
-        <button class="dock__btn" data-tool="rect" title="Rectangle (R)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+      <!-- Shapes Popover Group (All shapes in one section) -->
+      <div class="dock__group popover-group">
+        <button id="shapesTriggerBtn" class="dock__btn" data-tool="rect" title="Shapes (Rectangle, Circle, Arrow, Line)">
+          <span id="currentShapeIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+          </span>
+          <svg class="dock__btn-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
-        <button class="dock__btn" data-tool="circle" title="Circle (O)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle></svg>
-        </button>
-        <button class="dock__btn" data-tool="arrow" title="Arrow (A)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-        </button>
-        <button class="dock__btn" data-tool="line" title="Line (L)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="5"></line></svg>
-        </button>
+        <div id="shapesPalettePopover" class="popover-panel popover-panel--shapes hidden">
+          <div class="popover-section-label">Shapes</div>
+          <button class="popover-tool-btn is-active" data-tool="rect" title="Rectangle (R)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+            <span>Rectangle</span>
+            <kbd>R</kbd>
+          </button>
+          <button class="popover-tool-btn" data-tool="circle" title="Circle (O)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle></svg>
+            <span>Circle</span>
+            <kbd>O</kbd>
+          </button>
+          <button class="popover-tool-btn" data-tool="arrow" title="Arrow (A)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            <span>Arrow</span>
+            <kbd>A</kbd>
+          </button>
+          <button class="popover-tool-btn" data-tool="line" title="Line (L)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="5"></line></svg>
+            <span>Line</span>
+            <kbd>L</kbd>
+          </button>
+        </div>
       </div>
 
       <div class="dock__divider"></div>
@@ -151,39 +164,57 @@
 
       <div class="dock__divider"></div>
 
-      <!-- Styling: Color Swatches & Stroke Width -->
-      <div class="dock__group">
-        <div class="color-picker-wrapper">
-          <button id="colorTriggerBtn" class="dock__color-preview" title="Change Color">
-            <span id="currentColorDot" class="dock__color-dot"></span>
-          </button>
-          <div id="colorPalettePopover" class="color-popover hidden">
-            <div class="color-grid" id="colorGrid"></div>
+      <!-- Styling: Color & Stroke Width (All styling in one section) -->
+      <div class="dock__group popover-group">
+        <button id="colorTriggerBtn" class="dock__btn dock__color-preview-btn" title="Color & Stroke Width">
+          <span id="currentColorDot" class="dock__color-dot"></span>
+          <svg class="dock__btn-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div id="colorPalettePopover" class="popover-panel popover-panel--colors hidden">
+          <div class="popover-section-label">Color Palette</div>
+          <div class="color-grid" id="colorGrid"></div>
+          <div class="popover-divider"></div>
+          <div class="popover-section-label">Stroke Width</div>
+          <div class="size-picker-row">
+            <button class="size-btn is-active" data-size="3" title="Fine (3px)">
+              <span style="width:4px;height:4px;"></span>
+              <span>Fine</span>
+            </button>
+            <button class="size-btn" data-size="6" title="Medium (6px)">
+              <span style="width:7px;height:7px;"></span>
+              <span>Medium</span>
+            </button>
+            <button class="size-btn" data-size="12" title="Thick (12px)">
+              <span style="width:11px;height:11px;"></span>
+              <span>Thick</span>
+            </button>
           </div>
-        </div>
-
-        <div class="size-picker-wrapper">
-          <button class="size-btn is-active" data-size="3" title="Fine (3px)"><span style="width:4px;height:4px;"></span></button>
-          <button class="size-btn" data-size="6" title="Medium (6px)"><span style="width:7px;height:7px;"></span></button>
-          <button class="size-btn" data-size="12" title="Thick (12px)"><span style="width:11px;height:11px;"></span></button>
         </div>
       </div>
 
       <div class="dock__divider"></div>
 
-      <!-- Live Figma-Style Cursor Chat & Reactions -->
-      <div class="dock__group">
-        <button id="cursorChatBtn" class="dock__btn dock__btn--chat" title="Live Cursor Chat (Press /)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-          <span class="dock__key-tag">/</span>
+      <!-- Live Figma-Style Cursor Chat & Reactions (All reactions in one section) -->
+      <div class="dock__group popover-group">
+        <button id="reactionsTriggerBtn" class="dock__btn" title="Reactions & Cursor Chat">
+          <span style="font-size:16px;line-height:1;">🔥</span>
+          <svg class="dock__btn-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
-
-        <div class="reactions-strip" id="reactionsStrip">
-          <button class="reaction-btn" data-emoji="🔥" title="React Fire">🔥</button>
-          <button class="reaction-btn" data-emoji="❤️" title="React Heart">❤️</button>
-          <button class="reaction-btn" data-emoji="🎉" title="React Party">🎉</button>
-          <button class="reaction-btn" data-emoji="🚀" title="React Rocket">🚀</button>
-          <button class="reaction-btn" data-emoji="👍" title="React Thumbs Up">👍</button>
+        <div id="reactionsPalettePopover" class="popover-panel popover-panel--reactions hidden">
+          <div class="popover-section-label">Emoji Reactions</div>
+          <div class="popover-reactions-grid" id="reactionsStrip">
+            <button class="reaction-btn" data-emoji="🔥" title="React Fire">🔥</button>
+            <button class="reaction-btn" data-emoji="❤️" title="React Heart">❤️</button>
+            <button class="reaction-btn" data-emoji="🎉" title="React Party">🎉</button>
+            <button class="reaction-btn" data-emoji="🚀" title="React Rocket">🚀</button>
+            <button class="reaction-btn" data-emoji="👍" title="React Thumbs Up">👍</button>
+          </div>
+          <div class="popover-divider"></div>
+          <button id="cursorChatBtn" class="popover-chat-btn" title="Live Cursor Chat (Press /)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <span>Live Cursor Chat</span>
+            <kbd>/</kbd>
+          </button>
         </div>
       </div>
 

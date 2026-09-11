@@ -38,11 +38,17 @@
   const toastEl = document.getElementById('toast');
 
   const mainDock = document.getElementById('mainDock');
+  const shapesTriggerBtn = document.getElementById('shapesTriggerBtn');
+  const shapesPalettePopover = document.getElementById('shapesPalettePopover');
+  const currentShapeIcon = document.getElementById('currentShapeIcon');
+
   const colorTriggerBtn = document.getElementById('colorTriggerBtn');
   const currentColorDot = document.getElementById('currentColorDot');
   const colorPalettePopover = document.getElementById('colorPalettePopover');
   const colorGrid = document.getElementById('colorGrid');
 
+  const reactionsTriggerBtn = document.getElementById('reactionsTriggerBtn');
+  const reactionsPalettePopover = document.getElementById('reactionsPalettePopover');
   const cursorChatBtn = document.getElementById('cursorChatBtn');
   const cursorChatBubble = document.getElementById('cursorChatBubble');
   const cursorChatInput = document.getElementById('cursorChatInput');
@@ -1110,6 +1116,7 @@
 
   cursorChatBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (reactionsPalettePopover) reactionsPalettePopover.classList.add('hidden');
     openCursorChat(window.innerWidth / 2, window.innerHeight / 2);
   });
 
@@ -1268,28 +1275,114 @@
   requestAnimationFrame(renderVfxLoop);
 
   // ---------- Toolbar & Dock Controls ----------
+  const SHAPE_TOOLS = ['rect', 'circle', 'arrow', 'line'];
+  let currentShapeType = 'rect';
+
+  const shapeIcons = {
+    rect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>',
+    circle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle></svg>',
+    arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>',
+    line: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="5"></line></svg>'
+  };
+
   function setTool(tool) {
     currentTool = tool;
     document.body.dataset.tool = tool;
-    mainDock.querySelectorAll('.dock__btn').forEach(btn => {
+
+    if (SHAPE_TOOLS.includes(tool)) {
+      currentShapeType = tool;
+      if (shapesTriggerBtn) {
+        shapesTriggerBtn.dataset.tool = tool;
+        shapesTriggerBtn.classList.add('is-active');
+      }
+      if (currentShapeIcon) {
+        currentShapeIcon.innerHTML = shapeIcons[tool] || shapeIcons.rect;
+      }
+      if (shapesPalettePopover) {
+        shapesPalettePopover.querySelectorAll('.popover-tool-btn').forEach(btn => {
+          btn.classList.toggle('is-active', btn.dataset.tool === tool);
+        });
+      }
+    } else {
+      if (shapesTriggerBtn) shapesTriggerBtn.classList.remove('is-active');
+    }
+
+    mainDock.querySelectorAll('.dock__btn[data-tool]').forEach(btn => {
+      if (btn === shapesTriggerBtn) return;
       btn.classList.toggle('is-active', btn.dataset.tool === tool);
     });
+
     playSound('click');
   }
 
   mainDock.querySelectorAll('.dock__btn[data-tool]').forEach(btn => {
+    if (btn === shapesTriggerBtn) return;
     btn.addEventListener('click', () => setTool(btn.dataset.tool));
   });
+
+  function closeAllPopovers() {
+    if (shapesPalettePopover) shapesPalettePopover.classList.add('hidden');
+    if (reactionsPalettePopover) reactionsPalettePopover.classList.add('hidden');
+    if (colorPalettePopover) colorPalettePopover.classList.add('hidden');
+    if (exportDropdown) exportDropdown.classList.add('hidden');
+  }
+
+  // 1. Shapes Popover Handling (Shapes in one section)
+  if (shapesTriggerBtn && shapesPalettePopover) {
+    shapesTriggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = !shapesPalettePopover.classList.contains('hidden');
+      closeAllPopovers();
+      if (!isVisible) {
+        shapesPalettePopover.classList.remove('hidden');
+      }
+      if (!SHAPE_TOOLS.includes(currentTool)) {
+        setTool(currentShapeType);
+      }
+    });
+
+    shapesPalettePopover.querySelectorAll('.popover-tool-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setTool(btn.dataset.tool);
+        shapesPalettePopover.classList.add('hidden');
+      });
+    });
+  }
+
+  // 2. Reactions Popover Handling (Reactions in one section)
+  if (reactionsTriggerBtn && reactionsPalettePopover) {
+    reactionsTriggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = !reactionsPalettePopover.classList.contains('hidden');
+      closeAllPopovers();
+      if (!isVisible) {
+        reactionsPalettePopover.classList.remove('hidden');
+      }
+    });
+  }
+
+  // 3. Color & Stroke Width Popover Handling (Colours in one section)
+  if (colorTriggerBtn && colorPalettePopover) {
+    colorTriggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = !colorPalettePopover.classList.contains('hidden');
+      closeAllPopovers();
+      if (!isVisible) {
+        colorPalettePopover.classList.remove('hidden');
+      }
+    });
+  }
 
   // Color Swatches Initialization
   PALETTE.forEach((color, i) => {
     const swatch = document.createElement('button');
     swatch.className = 'color-swatch' + (i === 0 ? ' is-active' : '');
     swatch.style.backgroundColor = color;
-    swatch.addEventListener('click', () => {
+    swatch.addEventListener('click', (e) => {
+      e.stopPropagation();
       currentColor = color;
       currentColorDot.style.backgroundColor = color;
-      colorPalettePopover.classList.add('hidden');
       colorGrid.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('is-active'));
       swatch.classList.add('is-active');
       playSound('click');
@@ -1297,28 +1390,30 @@
     colorGrid.appendChild(swatch);
   });
 
-  colorTriggerBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    colorPalettePopover.classList.toggle('hidden');
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!colorPalettePopover.contains(e.target) && e.target !== colorTriggerBtn) {
-      colorPalettePopover.classList.add('hidden');
-    }
-    if (!exportDropdown.contains(e.target) && !exportMenuBtn.contains(e.target)) {
-      exportDropdown.classList.add('hidden');
-    }
-  });
-
-  // Size Picker Buttons
+  // Size Picker Buttons (Inside Color Popover)
   document.querySelectorAll('.size-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       currentSize = Number(btn.dataset.size);
       document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('is-active'));
       btn.classList.add('is-active');
       playSound('click');
     });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (shapesPalettePopover && !shapesPalettePopover.contains(e.target) && (!shapesTriggerBtn || !shapesTriggerBtn.contains(e.target))) {
+      shapesPalettePopover.classList.add('hidden');
+    }
+    if (reactionsPalettePopover && !reactionsPalettePopover.contains(e.target) && (!reactionsTriggerBtn || !reactionsTriggerBtn.contains(e.target))) {
+      reactionsPalettePopover.classList.add('hidden');
+    }
+    if (colorPalettePopover && !colorPalettePopover.contains(e.target) && (!colorTriggerBtn || !colorTriggerBtn.contains(e.target))) {
+      colorPalettePopover.classList.add('hidden');
+    }
+    if (exportDropdown && !exportDropdown.contains(e.target) && (!exportMenuBtn || !exportMenuBtn.contains(e.target))) {
+      exportDropdown.classList.add('hidden');
+    }
   });
 
   // Undo / Redo
@@ -1410,11 +1505,13 @@
     reader.readAsText(file);
   });
 
-  sfxToggleBtn.addEventListener('click', () => {
-    sfxEnabled = !sfxEnabled;
-    sfxToggleBtn.style.opacity = sfxEnabled ? '1' : '0.4';
-    showToast(sfxEnabled ? 'Audio Effects: ON' : 'Audio Effects: OFF');
-  });
+  if (sfxToggleBtn) {
+    sfxToggleBtn.addEventListener('click', () => {
+      sfxEnabled = !sfxEnabled;
+      sfxToggleBtn.style.opacity = sfxEnabled ? '1' : '0.4';
+      showToast(sfxEnabled ? 'Audio Effects: ON' : 'Audio Effects: OFF');
+    });
+  }
 
   // Shortcuts Modal
   shortcutsBtn.addEventListener('click', () => shortcutsModal.classList.remove('hidden'));
