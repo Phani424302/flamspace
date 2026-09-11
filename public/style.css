@@ -1018,19 +1018,13 @@ kbd {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 14px;
   line-height: 1.4;
 }
 
 .shortcuts-footer-author {
   color: var(--text-main);
   font-weight: 600;
-}
-
-.shortcuts-footer-dot {
-  opacity: 0.4;
-  margin: 0 3px;
-  user-select: none;
 }
 
 .shortcuts-footer-copy {
