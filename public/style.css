@@ -1000,6 +1000,102 @@ kbd {
   color: var(--text-main);
 }
 
+/* Shortcuts Modal Footer & Developer Credit Badge */
+.shortcuts-modal-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.modal-footer-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  user-select: none;
+}
+
+.modal-footer-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 18px;
+  padding: 0 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--surface-active);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.dev-credit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: color 0.15s ease;
+}
+
+.dev-heart {
+  color: #EF4444;
+  display: inline-block;
+  font-size: 11px;
+  animation: pulse-heart 2s infinite ease-in-out;
+}
+
+@keyframes pulse-heart {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}
+
+.dev-credit-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 14px;
+  background: var(--surface-active);
+  border: 1px solid var(--border-strong);
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 11px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.dev-credit-badge:hover .dev-credit-name {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #A5B4FC;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
+}
+
+.dev-arrow-icon {
+  stroke: currentColor;
+  opacity: 0.65;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.dev-credit-badge:hover .dev-arrow-icon {
+  transform: translate(1px, -1px);
+  opacity: 1;
+}
+
+.dev-github-icon {
+  opacity: 0.85;
+}
+
 /* Toast */
 .toast {
   position: fixed;

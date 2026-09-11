@@ -1771,6 +1771,9 @@
       openCursorChat(window.innerWidth / 2, window.innerHeight / 2);
     } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
       shortcutsModal.classList.toggle('hidden');
+    } else if (e.key === 'Escape') {
+      shortcutsModal.classList.add('hidden');
+      closeAllPopovers();
     } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
       if (e.shiftKey) performRedo();
       else performUndo();
