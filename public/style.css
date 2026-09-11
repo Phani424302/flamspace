@@ -796,24 +796,41 @@ body[data-tool="laser"] #board { cursor: crosshair; }
   display: flex;
   align-items: center;
   gap: 4px;
+  position: relative;
+  z-index: 10;
 }
 
 .sticky-btn-delete {
   background: transparent;
   border: none;
-  font-size: 14px;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 700;
   cursor: pointer;
-  opacity: 0.5;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+  opacity: 0.6;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: inherit;
+  transition: all 0.15s ease;
+  user-select: none;
+  touch-action: manipulation;
+  position: relative;
+  z-index: 10;
 }
 
-.sticky-btn-delete:hover { opacity: 1; background: rgba(0,0,0,0.1); }
+.sticky-btn-delete:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.15);
+  transform: scale(1.12);
+}
+
+.sticky-btn-delete:active {
+  transform: scale(0.92);
+}
 
 .sticky-textarea {
   flex: 1;

@@ -465,13 +465,25 @@
     handle.addEventListener('pointerup', finishTextDrag);
     handle.addEventListener('pointercancel', finishTextDrag);
 
-    box.querySelector('.board-text-btn-delete').addEventListener('click', (e) => {
-      e.stopPropagation();
+    const textDeleteBtn = box.querySelector('.board-text-btn-delete');
+    ['pointerdown', 'mousedown', 'pointerup'].forEach(evt => {
+      textDeleteBtn.addEventListener(evt, (e) => e.stopPropagation());
+    });
+
+    const deleteTextBox = (e) => {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      box.remove();
+      textDoms.delete(el.id);
       elements = elements.filter(item => item.id !== el.id);
-      updateDomOverlays();
+      redrawAll();
       socket.emit('element:delete', el.id);
       playSound('pop');
-    });
+    };
+
+    textDeleteBtn.addEventListener('click', deleteTextBox);
 
     return box;
   }
@@ -503,6 +515,9 @@
     let originalElX = 0, originalElY = 0;
 
     header.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.sticky-actions') || e.target.closest('.sticky-btn-delete')) {
+        return;
+      }
       e.stopPropagation();
       isDraggingSticky = true;
       card.classList.add('is-dragging');
@@ -544,13 +559,25 @@
     });
 
     // Delete note
-    card.querySelector('.sticky-btn-delete').addEventListener('click', (e) => {
-      e.stopPropagation();
-      elements = elements.filter(e => e.id !== el.id);
-      updateDomOverlays();
+    const deleteBtn = card.querySelector('.sticky-btn-delete');
+    ['pointerdown', 'mousedown', 'pointerup'].forEach(evt => {
+      deleteBtn.addEventListener(evt, (e) => e.stopPropagation());
+    });
+
+    const deleteSticky = (e) => {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      card.remove();
+      stickyDoms.delete(el.id);
+      elements = elements.filter(item => item.id !== el.id);
+      redrawAll();
       socket.emit('element:delete', el.id);
       playSound('pop');
-    });
+    };
+
+    deleteBtn.addEventListener('click', deleteSticky);
 
     return card;
   }
