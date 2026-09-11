@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>FlamSpace — Real-Time Collaborative Whiteboard | FLAM AI R&D</title>
+  <title>FlamSpace — Real-Time Collaborative Whiteboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -41,6 +41,9 @@
         <input id="roomInput" class="room-pill__input" spellcheck="false" autocomplete="off" value="demo" title="Edit room name and press Enter" />
         <button id="roomCopyBtn" class="btn-icon" title="Copy share link">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </button>
+        <button id="switchRoomBtn" class="btn-icon" title="Create or join another room">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         </button>
       </div>
     </div>
@@ -242,44 +245,80 @@
         <div class="shortcut-row"><span class="shortcut-label">Undo / Redo</span><kbd>Ctrl+Z / Y</kbd></div>
         <div class="shortcut-row"><span class="shortcut-label">Delete Selected</span><kbd>Del / Backspace</kbd></div>
       </div>
-      <div class="modal-footer" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-muted);">
+      <div class="modal-footer" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:center;align-items:center;font-size:11px;color:var(--text-muted);">
         <span>Built by <strong style="color:var(--text-main);">Phani Bhushan Reddy</strong></span>
-        <span style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);padding:2px 8px;border-radius:12px;color:var(--accent);font-weight:600;">FLAM AI Frontend R&D</span>
       </div>
     </div>
   </div>
 
-  <!-- Welcome Entry Modal: Choose Display Name & Cursor Color -->
+  <!-- Welcome Entry Modal: Choose Display Name, Cursor Color & Room (Create or Join) -->
   <div id="welcomeModal" class="modal-overlay hidden">
     <div class="modal-card modal-card--entry">
-      <div class="modal-header">
+      <div class="modal-header" style="margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <div class="brand__icon" style="width:32px;height:32px;">
+          <div class="brand__icon" style="width:34px;height:34px;">
             <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
               <path d="M12 23c4.97 0 9-4.03 9-9 0-4.08-2.61-6.85-4.88-8.98-1.57-1.47-3.08-2.73-3.62-4.02a.5.5 0 0 0-.94.04C10.5 4.5 9 7 9 9.5c0 1.25.5 2.2 1.15 3.03.62.8 1.35 1.5 1.35 2.47 0 1.38-1.12 2.5-2.5 2.5s-2.5-1.12-2.5-2.5c0-1.84 1.16-3.41 1.72-4.14a.5.5 0 0 0-.74-.63C5.58 12.08 3 14.58 3 17c0 3.31 4.03 6 9 6z"/>
             </svg>
           </div>
           <div>
-            <h3 class="modal-title" style="font-size:16px;">Welcome to FlamSpace</h3>
-            <p style="font-size:11px;color:var(--text-muted);">Set your collaborator name to join the board</p>
+            <h3 class="modal-title" style="font-size:16px;line-height:1.2;">Welcome to FlamSpace</h3>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:2px;">Real-Time Collaborative Whiteboard</p>
           </div>
         </div>
+        <button id="closeWelcomeBtn" class="modal-close hidden" title="Close" style="font-size:18px;">&times;</button>
       </div>
 
-      <div class="entry-form" style="margin-top:16px;display:flex;flex-direction:column;gap:16px;">
+      <div class="entry-form" style="display:flex;flex-direction:column;gap:14px;">
         <div>
           <label style="display:block;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;letter-spacing:0.04em;">Your Display Name</label>
-          <input type="text" id="welcomeNameInput" class="form-input" placeholder="e.g. Phani Bhushan" maxlength="28" spellcheck="false" autocomplete="off" />
+          <input type="text" id="welcomeNameInput" class="form-input" placeholder="e.g. Phani Reddy" maxlength="28" spellcheck="false" autocomplete="off" />
         </div>
 
         <div>
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;letter-spacing:0.04em;">Pick Your Cursor & Avatar Color</label>
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;letter-spacing:0.04em;">Your Cursor & Avatar Color</label>
           <div class="profile-color-grid" id="welcomeColorGrid"></div>
         </div>
 
-        <button id="welcomeJoinBtn" class="top-btn top-btn--primary" style="justify-content:center;padding:10px;font-size:13px;border-radius:8px;margin-top:4px;">
-          <span>Join Whiteboard &rarr;</span>
-        </button>
+        <div style="border-top:1px solid var(--border);padding-top:12px;">
+          <label style="display:block;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;letter-spacing:0.04em;">Choose Room</label>
+          
+          <div class="entry-tabs">
+            <button type="button" class="entry-tab is-active" id="tabCreateRoom">
+              ✨ Create Room
+            </button>
+            <button type="button" class="entry-tab" id="tabJoinRoom">
+              🔗 Join with Code
+            </button>
+          </div>
+
+          <!-- Create Room View -->
+          <div id="paneCreateRoom" style="margin-top:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface-active);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:12px;">
+              <div>
+                <span style="font-size:10px;color:var(--text-muted);display:block;text-transform:uppercase;letter-spacing:0.04em;">New Room Code</span>
+                <span id="welcomeNewRoomCode" style="font-family:var(--font-mono);font-size:15px;font-weight:700;color:var(--accent);"></span>
+              </div>
+              <button type="button" id="regenRoomBtn" class="btn-icon" title="Generate another code" style="width:28px;height:28px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              </button>
+            </div>
+            <button id="welcomeCreateBtn" type="button" class="top-btn top-btn--primary" style="width:100%;justify-content:center;padding:11px;font-size:13px;border-radius:8px;">
+              <span>Create New Room &rarr;</span>
+            </button>
+          </div>
+
+          <!-- Join Room View -->
+          <div id="paneJoinRoom" class="hidden" style="margin-top:12px;">
+            <div style="margin-bottom:12px;">
+              <input type="text" id="welcomeJoinInput" class="form-input" placeholder="Enter friend's room code..." maxlength="64" spellcheck="false" autocomplete="off" />
+              <p id="welcomeJoinNotice" style="font-size:11px;color:var(--accent);margin-top:6px;display:none;font-weight:500;">Joining room from link</p>
+            </div>
+            <button id="welcomeJoinBtn" type="button" class="top-btn top-btn--primary" style="width:100%;justify-content:center;padding:11px;font-size:13px;border-radius:8px;">
+              <span>Join Friend's Room &rarr;</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

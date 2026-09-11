@@ -72,6 +72,14 @@ io.on('connection', (socket) => {
       roomId = payload.toString().slice(0, 64);
     }
 
+    if (currentRoom && currentRoom !== roomId) {
+      socket.leave(currentRoom);
+      const prevRoom = getRoom(currentRoom);
+      delete prevRoom.users[socket.id];
+      io.to(currentRoom).emit('user:list', userList(currentRoom));
+      io.to(currentRoom).emit('user:left', socket.id);
+    }
+
     currentRoom = roomId;
     socket.join(roomId);
 

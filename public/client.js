@@ -3,13 +3,10 @@
 
   // ---------- Room & URL Resolution ----------
   const params = new URLSearchParams(window.location.search);
-  let roomId = params.get('room');
-  if (!roomId) {
-    roomId = Math.random().toString(36).slice(2, 8);
-    const url = new URL(window.location.href);
-    url.searchParams.set('room', roomId);
-    window.history.replaceState({}, '', url);
-  }
+  const urlRoom = (params.get('room') || '').trim();
+  const sessionRoom = sessionStorage.getItem('flamspace_active_room');
+  let isJoined = !!(sessionRoom && (!urlRoom || sessionRoom === urlRoom));
+  let roomId = isJoined ? sessionRoom : (urlRoom || '');
 
   // ---------- DOM Elements ----------
   const gridCanvas = document.getElementById('gridCanvas');
@@ -26,6 +23,7 @@
   const connStatus = document.getElementById('connStatus');
   const roomInput = document.getElementById('roomInput');
   const roomCopyBtn = document.getElementById('roomCopyBtn');
+  const switchRoomBtn = document.getElementById('switchRoomBtn');
   const presenceStack = document.getElementById('presenceStack');
   const sfxToggleBtn = document.getElementById('sfxToggleBtn');
   const shortcutsBtn = document.getElementById('shortcutsBtn');
@@ -438,10 +436,20 @@
     return card;
   }
 
-  // ---------- User Profile Management ----------
+  // ---------- User Profile & Entry Modal Management ----------
   const welcomeModal = document.getElementById('welcomeModal');
+  const closeWelcomeBtn = document.getElementById('closeWelcomeBtn');
   const welcomeNameInput = document.getElementById('welcomeNameInput');
   const welcomeColorGrid = document.getElementById('welcomeColorGrid');
+  const tabCreateRoom = document.getElementById('tabCreateRoom');
+  const tabJoinRoom = document.getElementById('tabJoinRoom');
+  const paneCreateRoom = document.getElementById('paneCreateRoom');
+  const paneJoinRoom = document.getElementById('paneJoinRoom');
+  const welcomeNewRoomCode = document.getElementById('welcomeNewRoomCode');
+  const regenRoomBtn = document.getElementById('regenRoomBtn');
+  const welcomeCreateBtn = document.getElementById('welcomeCreateBtn');
+  const welcomeJoinInput = document.getElementById('welcomeJoinInput');
+  const welcomeJoinNotice = document.getElementById('welcomeJoinNotice');
   const welcomeJoinBtn = document.getElementById('welcomeJoinBtn');
 
   const profileModal = document.getElementById('profileModal');
@@ -457,8 +465,11 @@
   } catch (e) {}
 
   let selectedColor = (myProfile && myProfile.color) || PALETTE[Math.floor(Math.random() * PALETTE.length)];
+  let activeEntryTab = urlRoom ? 'join' : 'create';
+  let generatedRoomCode = Math.random().toString(36).slice(2, 8);
 
   function renderColorOptions(container, activeColor, onSelect) {
+    if (!container) return;
     container.innerHTML = '';
     PALETTE.forEach(c => {
       const dot = document.createElement('button');
@@ -474,6 +485,146 @@
     });
   }
 
+  function setEntryTab(tab) {
+    activeEntryTab = tab;
+    if (tab === 'create') {
+      tabCreateRoom.classList.add('is-active');
+      tabJoinRoom.classList.remove('is-active');
+      paneCreateRoom.classList.remove('hidden');
+      paneJoinRoom.classList.add('hidden');
+    } else {
+      tabJoinRoom.classList.add('is-active');
+      tabCreateRoom.classList.remove('is-active');
+      paneJoinRoom.classList.remove('hidden');
+      paneCreateRoom.classList.add('hidden');
+      setTimeout(() => welcomeJoinInput.focus(), 60);
+    }
+  }
+
+  tabCreateRoom.addEventListener('click', () => setEntryTab('create'));
+  tabJoinRoom.addEventListener('click', () => setEntryTab('join'));
+
+  function refreshGeneratedCode() {
+    generatedRoomCode = Math.random().toString(36).slice(2, 8);
+    if (welcomeNewRoomCode) welcomeNewRoomCode.textContent = generatedRoomCode;
+  }
+  refreshGeneratedCode();
+
+  if (regenRoomBtn) {
+    regenRoomBtn.addEventListener('click', () => {
+      refreshGeneratedCode();
+      playSound('click');
+    });
+  }
+
+  function enterRoom(targetRoomId) {
+    const rawCode = (targetRoomId || '').trim();
+    if (!rawCode) {
+      showToast('Please enter a valid room code');
+      return;
+    }
+    const safeRoomId = rawCode.slice(0, 64);
+    const chosenName = welcomeNameInput.value.trim() || (myProfile && myProfile.name) || 'Collaborator';
+
+    myProfile = { name: chosenName, color: selectedColor };
+    localStorage.setItem('flamspace_profile', JSON.stringify(myProfile));
+    sessionStorage.setItem('flamspace_active_room', safeRoomId);
+
+    roomId = safeRoomId;
+    isJoined = true;
+    roomInput.value = safeRoomId;
+
+    // Update URL query string
+    const url = new URL(window.location.href);
+    url.searchParams.set('room', safeRoomId);
+    window.history.replaceState({}, '', url);
+
+    welcomeModal.classList.add('hidden');
+
+    // Emit room:join if socket is ready
+    if (socket.connected) {
+      socket.emit('room:join', { roomId: safeRoomId, name: chosenName, color: selectedColor });
+    }
+    showToast(`Joined room: ${safeRoomId}`);
+  }
+
+  welcomeCreateBtn.addEventListener('click', () => {
+    enterRoom(generatedRoomCode);
+  });
+
+  welcomeJoinBtn.addEventListener('click', () => {
+    const code = welcomeJoinInput.value.trim();
+    if (!code) {
+      welcomeJoinInput.focus();
+      showToast("Please enter your friend's room code");
+      return;
+    }
+    enterRoom(code);
+  });
+
+  welcomeJoinInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      welcomeJoinBtn.click();
+    }
+  });
+
+  welcomeNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (activeEntryTab === 'create') {
+        welcomeCreateBtn.click();
+      } else {
+        if (welcomeJoinInput.value.trim()) {
+          welcomeJoinBtn.click();
+        } else {
+          welcomeJoinInput.focus();
+        }
+      }
+    }
+  });
+
+  function openWelcomeModal(canClose = false) {
+    welcomeModal.classList.remove('hidden');
+    if (canClose && isJoined) {
+      closeWelcomeBtn.classList.remove('hidden');
+    } else {
+      closeWelcomeBtn.classList.add('hidden');
+    }
+
+    refreshGeneratedCode();
+    welcomeNameInput.value = (myProfile && myProfile.name) || '';
+    renderColorOptions(welcomeColorGrid, selectedColor, (c) => { selectedColor = c; });
+
+    if (urlRoom) {
+      setEntryTab('join');
+      welcomeJoinInput.value = urlRoom;
+      welcomeJoinNotice.style.display = 'block';
+      welcomeJoinNotice.textContent = `Joining room from invite: "${urlRoom}"`;
+    } else {
+      setEntryTab('create');
+      welcomeJoinNotice.style.display = 'none';
+    }
+
+    setTimeout(() => {
+      if (!welcomeNameInput.value) welcomeNameInput.focus();
+      else if (activeEntryTab === 'join') welcomeJoinInput.focus();
+    }, 80);
+  }
+
+  closeWelcomeBtn.addEventListener('click', () => {
+    if (isJoined) welcomeModal.classList.add('hidden');
+  });
+
+  if (switchRoomBtn) {
+    switchRoomBtn.addEventListener('click', () => openWelcomeModal(true));
+  }
+
+  // Display entry modal whenever visiting until joined in this tab
+  if (!isJoined) {
+    openWelcomeModal(false);
+  } else {
+    roomInput.value = roomId;
+  }
+
   // Profile Modal logic (open when clicking own avatar in top bar)
   function openProfileModal() {
     profileModal.classList.remove('hidden');
@@ -484,6 +635,7 @@
 
     const saveProfile = () => {
       const newName = profileNameInput.value.trim() || (me ? me.name : 'Collaborator');
+      selectedColor = editColor;
       myProfile = { name: newName, color: editColor };
       localStorage.setItem('flamspace_profile', JSON.stringify(myProfile));
       if (me) {
@@ -510,29 +662,6 @@
     if (e.target === profileModal) profileModal.classList.add('hidden');
   });
 
-  // Check if first-time visitor: Show Welcome Join Modal
-  if (!myProfile || !myProfile.name) {
-    welcomeModal.classList.remove('hidden');
-    renderColorOptions(welcomeColorGrid, selectedColor, (c) => { selectedColor = c; });
-    setTimeout(() => welcomeNameInput.focus(), 100);
-
-    const handleJoin = () => {
-      const name = welcomeNameInput.value.trim() || 'Collaborator';
-      myProfile = { name, color: selectedColor };
-      localStorage.setItem('flamspace_profile', JSON.stringify(myProfile));
-      welcomeModal.classList.add('hidden');
-      if (socket.connected) {
-        socket.emit('room:join', { roomId, name: myProfile.name, color: myProfile.color });
-      }
-      showToast(`Welcome to FlamSpace, ${name}!`);
-    };
-
-    welcomeJoinBtn.addEventListener('click', handleJoin);
-    welcomeNameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') handleJoin();
-    });
-  }
-
   // ---------- Socket.IO Multiplayer Architecture ----------
   const socket = io();
 
@@ -543,10 +672,9 @@
 
   socket.on('connect', () => {
     setStatus('online', 'live');
-    if (myProfile && myProfile.name) {
-      socket.emit('room:join', { roomId, name: myProfile.name, color: myProfile.color });
-    } else {
-      socket.emit('room:join', { roomId, name: '', color: selectedColor });
+    if (isJoined && roomId) {
+      const name = (myProfile && myProfile.name) || 'Collaborator';
+      socket.emit('room:join', { roomId, name, color: selectedColor });
     }
   });
 
@@ -1312,13 +1440,16 @@
   roomInput.addEventListener('change', () => {
     const newRoom = roomInput.value.trim().slice(0, 64) || Math.random().toString(36).slice(2, 8);
     roomInput.value = newRoom;
+    sessionStorage.setItem('flamspace_active_room', newRoom);
     const url = new URL(window.location.href);
     url.searchParams.set('room', newRoom);
     window.history.replaceState({}, '', url);
     roomId = newRoom;
+    isJoined = true;
     elements = [];
     redrawAll();
-    socket.emit('room:join', roomId);
+    const currentName = (myProfile && myProfile.name) || 'Collaborator';
+    socket.emit('room:join', { roomId: newRoom, name: currentName, color: selectedColor });
     showToast(`Joined room: ${newRoom}`);
   });
 
