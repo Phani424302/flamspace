@@ -168,9 +168,14 @@
 
   // ---------- Canvas Resizing ----------
   function resizeAll() {
-    dpr = window.devicePixelRatio || 1;
-    cssW = window.innerWidth;
-    cssH = window.innerHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    if (window.visualViewport) {
+      cssW = Math.round(window.visualViewport.width);
+      cssH = Math.round(window.visualViewport.height);
+    } else {
+      cssW = window.innerWidth;
+      cssH = window.innerHeight;
+    }
 
     [gridCanvas, board, draftLayer, cursorLayer].forEach(c => {
       c.width = cssW * dpr;
@@ -443,7 +448,7 @@
       dragStartY = e.clientY;
       originalElX = el.x;
       originalElY = el.y;
-      handle.setPointerCapture(e.pointerId);
+      try { handle.setPointerCapture(e.pointerId); } catch (_) {}
     });
 
     handle.addEventListener('pointermove', (e) => {
@@ -525,7 +530,7 @@
       dragStartY = e.clientY;
       originalElX = el.x;
       originalElY = el.y;
-      header.setPointerCapture(e.pointerId);
+      try { header.setPointerCapture(e.pointerId); } catch (_) {}
     });
 
     header.addEventListener('pointermove', (e) => {
@@ -945,18 +950,62 @@
     }
   }
 
+  // ---------- Multi-Touch Gesture Engine (Pinch-to-zoom & Two-finger Pan) ----------
+  const activePointers = new Map();
+  let isPinching = false;
+  let pinchStartDist = 0;
+  let pinchStartZoom = 1;
+  let pinchStartWorldCenter = null;
+  let suppressDrawUntilAllPointersUp = false;
+
   // ---------- Input & Drawing Handling ----------
   board.addEventListener('pointerdown', (e) => {
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Multi-touch pinch gesture detected (2 or more fingers)
+    if (activePointers.size >= 2) {
+      isPinching = true;
+      suppressDrawUntilAllPointersUp = true;
+
+      // Abort in-flight single pointer drawing or single pointer pan
+      if (isPointerDown) {
+        isPointerDown = false;
+        currentStroke = null;
+        startWorldPoint = null;
+        clearDraft();
+      }
+      if (isPanning) {
+        isPanning = false;
+        document.body.classList.remove('is-panning-active');
+      }
+
+      const pts = Array.from(activePointers.values());
+      pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+      const midX = (pts[0].x + pts[1].x) / 2;
+      const midY = (pts[0].y + pts[1].y) / 2;
+      pinchStartZoom = zoom;
+      pinchStartWorldCenter = screenToWorld(midX, midY);
+
+      try { board.setPointerCapture(e.pointerId); } catch (_) {}
+      return;
+    }
+
+    // Prevent stray marks when lifting one finger from a 2-finger gesture
+    if (suppressDrawUntilAllPointersUp) {
+      return;
+    }
+
     if (e.button === 1 || spacePressed || currentTool === 'select') {
       // Pan mode
       isPanning = true;
       panStartX = e.clientX - panX;
       panStartY = e.clientY - panY;
       document.body.classList.add('is-panning-active');
+      try { board.setPointerCapture(e.pointerId); } catch (_) {}
       return;
     }
 
-    if (e.button !== 0) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     isPointerDown = true;
     const worldP = screenToWorld(e.clientX, e.clientY);
     startWorldPoint = worldP;
@@ -987,10 +1036,34 @@
       eraseAt(worldP);
     }
 
-    board.setPointerCapture(e.pointerId);
+    try { board.setPointerCapture(e.pointerId); } catch (_) {}
   });
 
   board.addEventListener('pointermove', (e) => {
+    if (activePointers.has(e.pointerId)) {
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+
+    // Handle Active Pinch-To-Zoom & Two-Finger Pan
+    if (isPinching && activePointers.size >= 2) {
+      const pts = Array.from(activePointers.values());
+      const currentDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+      const midX = (pts[0].x + pts[1].x) / 2;
+      const midY = (pts[0].y + pts[1].y) / 2;
+
+      const newZoom = Math.min(4.0, Math.max(0.2, pinchStartZoom * (currentDist / pinchStartDist)));
+      zoom = newZoom;
+      panX = midX - pinchStartWorldCenter.x * zoom;
+      panY = midY - pinchStartWorldCenter.y * zoom;
+
+      zoomLevelText.textContent = `${Math.round(zoom * 100)}%`;
+      drawGrid();
+      redrawAll();
+      return;
+    }
+
+    if (isPinching || suppressDrawUntilAllPointersUp) return;
+
     const worldP = screenToWorld(e.clientX, e.clientY);
 
     // Throttled Cursor Move broadcast
@@ -1029,6 +1102,25 @@
   }
 
   function finishPointerAction(e) {
+    if (e && e.pointerId !== undefined) {
+      activePointers.delete(e.pointerId);
+    }
+
+    if (isPinching) {
+      if (activePointers.size < 2) {
+        isPinching = false;
+        pinchStartWorldCenter = null;
+      }
+      if (activePointers.size === 0) {
+        suppressDrawUntilAllPointersUp = false;
+      }
+      return;
+    }
+
+    if (activePointers.size === 0) {
+      suppressDrawUntilAllPointersUp = false;
+    }
+
     if (isPanning) {
       isPanning = false;
       document.body.classList.remove('is-panning-active');
@@ -1076,6 +1168,21 @@
 
   window.addEventListener('pointerup', finishPointerAction);
   window.addEventListener('pointercancel', finishPointerAction);
+
+  // Prevent browser-level gestures (pinch to zoom page, swipe to navigate) on board
+  board.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  board.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  document.addEventListener('gesturechange', (e) => e.preventDefault());
+  document.addEventListener('gestureend', (e) => e.preventDefault());
 
   // ---------- Double-Click Attention Radar Ping ----------
   board.addEventListener('dblclick', (e) => {
@@ -1551,19 +1658,21 @@
     });
   });
 
-  document.addEventListener('click', (e) => {
-    if (shapesPalettePopover && !shapesPalettePopover.contains(e.target) && (!shapesTriggerBtn || !shapesTriggerBtn.contains(e.target))) {
-      shapesPalettePopover.classList.add('hidden');
-    }
-    if (reactionsPalettePopover && !reactionsPalettePopover.contains(e.target) && (!reactionsTriggerBtn || !reactionsTriggerBtn.contains(e.target))) {
-      reactionsPalettePopover.classList.add('hidden');
-    }
-    if (colorPalettePopover && !colorPalettePopover.contains(e.target) && (!colorTriggerBtn || !colorTriggerBtn.contains(e.target))) {
-      colorPalettePopover.classList.add('hidden');
-    }
-    if (exportDropdown && !exportDropdown.contains(e.target) && (!exportMenuBtn || !exportMenuBtn.contains(e.target))) {
-      exportDropdown.classList.add('hidden');
-    }
+  ['pointerdown', 'click'].forEach(evtType => {
+    document.addEventListener(evtType, (e) => {
+      if (shapesPalettePopover && !shapesPalettePopover.contains(e.target) && (!shapesTriggerBtn || !shapesTriggerBtn.contains(e.target))) {
+        shapesPalettePopover.classList.add('hidden');
+      }
+      if (reactionsPalettePopover && !reactionsPalettePopover.contains(e.target) && (!reactionsTriggerBtn || !reactionsTriggerBtn.contains(e.target))) {
+        reactionsPalettePopover.classList.add('hidden');
+      }
+      if (colorPalettePopover && !colorPalettePopover.contains(e.target) && (!colorTriggerBtn || !colorTriggerBtn.contains(e.target))) {
+        colorPalettePopover.classList.add('hidden');
+      }
+      if (exportDropdown && !exportDropdown.contains(e.target) && (!exportMenuBtn || !exportMenuBtn.contains(e.target))) {
+        exportDropdown.classList.add('hidden');
+      }
+    });
   });
 
   // Undo / Redo
@@ -1790,5 +1899,12 @@
   });
 
   window.addEventListener('resize', resizeAll);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', resizeAll);
+    window.visualViewport.addEventListener('scroll', resizeAll);
+  }
+  window.addEventListener('orientationchange', () => {
+    setTimeout(resizeAll, 150);
+  });
   resizeAll();
 })();

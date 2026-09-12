@@ -30,11 +30,14 @@
 html, body {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
+  overscroll-behavior: none;
   background-color: var(--bg);
   font-family: var(--font);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
+  -webkit-touch-callout: none;
 }
 
 /* ---------- Canvas Stack ---------- */
@@ -782,6 +785,7 @@ body[data-tool="laser"] #board { cursor: crosshair; }
   align-items: center;
   justify-content: space-between;
   cursor: grab;
+  touch-action: none;
 }
 
 .sticky-author {
@@ -1180,6 +1184,7 @@ kbd {
 
 .board-text-drag-handle {
   cursor: grab;
+  touch-action: none;
   color: var(--text-muted);
   font-size: 13px;
   line-height: 1.2;
@@ -1240,6 +1245,292 @@ kbd {
 .board-text-btn-delete:hover {
   color: #EF4444;
   opacity: 1;
+}
+
+/* =========================================================
+   RESPONSIVE DESIGN & MOBILE ADAPTATIONS (iOS & Android)
+   ========================================================= */
+
+/* Tablets & Small Laptops (<= 900px) */
+@media (max-width: 900px) {
+  .brand__status {
+    display: none;
+  }
+  .room-pill__label {
+    display: none;
+  }
+}
+
+/* Mobile Devices (<= 640px) */
+@media (max-width: 640px) {
+  /* Safe-area aware top nav */
+  .top-nav {
+    top: max(8px, env(safe-area-inset-top));
+    left: 8px;
+    right: 8px;
+    height: auto;
+    gap: 6px;
+  }
+
+  .top-nav__left {
+    gap: 6px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .top-nav__right {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* Compact Brand Badge */
+  .brand {
+    padding: 4px 8px;
+    gap: 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  .brand__icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+  }
+
+  .brand__icon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .brand__title {
+    font-size: 12px;
+  }
+
+  .brand__status {
+    display: none;
+  }
+
+  /* Compact Room Pill */
+  .room-pill {
+    padding: 4px 6px;
+    gap: 4px;
+    border-radius: var(--radius-sm);
+  }
+
+  .room-pill__label {
+    display: none;
+  }
+
+  .room-pill__input {
+    width: 52px;
+    font-size: 11px;
+  }
+
+  .btn-icon {
+    padding: 2px;
+  }
+
+  .btn-icon svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* Icon-Only Top Buttons on Mobile */
+  .top-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+  }
+
+  .top-btn span {
+    display: none;
+  }
+
+  .top-btn svg {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+  }
+
+  .presence-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+    margin-left: -6px;
+  }
+
+  .export-menu-container .dropdown-menu {
+    right: 0;
+    top: calc(100% + 6px);
+    min-width: 170px;
+  }
+
+  /* Bottom Dock Full Adaptation */
+  .dock-wrapper {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    padding: 0 6px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .dock {
+    padding: 4px 6px;
+    gap: 3px;
+    border-radius: var(--radius-md);
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+  }
+
+  .dock::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dock__group {
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .dock__divider {
+    height: 18px;
+    margin: 0 1px;
+    flex-shrink: 0;
+  }
+
+  .dock__btn {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .dock__btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .dock__btn:hover {
+    transform: none; /* Avoid sticky hover lift on touch screens */
+  }
+
+  .dock__key-tag {
+    display: none; /* Hide desktop shortcut tags on phones */
+  }
+
+  .dock__btn-chevron {
+    width: 7px;
+    height: 7px;
+    margin-left: 1px;
+  }
+
+  .dock__color-dot {
+    width: 15px;
+    height: 15px;
+  }
+
+  /* Reposition Zoom HUD above dock to prevent overlapping */
+  .zoom-hud {
+    bottom: max(56px, calc(env(safe-area-inset-bottom) + 50px));
+    right: 8px;
+    padding: 2px 5px;
+    gap: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  .zoom-hud__btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .zoom-hud__btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .zoom-hud__level {
+    font-size: 10px;
+    min-width: 32px;
+  }
+
+  /* Popover Panels Centered on Mobile Screen */
+  .popover-panel {
+    position: fixed;
+    bottom: max(56px, calc(env(safe-area-inset-bottom) + 50px));
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-width: calc(100vw - 16px);
+    box-sizing: border-box;
+  }
+
+  /* Responsive Modals */
+  .modal-card {
+    width: 92%;
+    max-width: calc(100vw - 20px);
+    max-height: 85vh;
+    max-height: 85dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
+  }
+
+  .shortcuts-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .shortcuts-footer-text {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .profile-color-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    justify-items: center;
+  }
+
+  .profile-color-dot {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Mobile Live Cursor Chat Input */
+  .cursor-chat-bubble {
+    position: fixed;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: auto !important;
+    bottom: max(60px, calc(env(safe-area-inset-bottom) + 54px)) !important;
+    border-radius: 20px;
+  }
+
+  .cursor-chat-bubble input {
+    width: 200px;
+  }
+
+  .board-text-drag-handle {
+    opacity: 0.85;
+    padding: 4px;
+  }
+}
+
+/* Extra Small Phones (<= 360px) */
+@media (max-width: 360px) {
+  .brand__title {
+    display: none;
+  }
+  .dock__btn {
+    width: 29px;
+    height: 29px;
+  }
+  .dock__btn svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 
